@@ -2,35 +2,31 @@ import sys
 import re
 from collections import defaultdict, Counter
 import random
+from iter_prefix import iter_prefix
 
 terminators = '([?.!])'
-
-
-def iterpairs(l):
-    return ((pre[0], n) for pre, n in iter_prefix(l))
-
-
-def iter_prefix(l, prefix_len=1):
-    return (
-        (
-            tuple(l[i + j] for j in range(prefix_len)),
-            l[i + prefix_len]
-        ) for i in range(len(l) - prefix_len)
-    )
 
 
 class MarkovWords(object):
     def __init__(self, text, max_len=2):
         self.length = max_len
         self.word_tables = []
+        # Create a word table for each tuple length
         for i in range(0, max_len):
             self.word_tables.append(self.create_table(text, i))
 
     def create_table(self, text, prefix_len):
-        sentences = filter(lambda x: x[0], map(lambda x: (x[0].strip(), x[1]), re.findall('([^.!?]*)([.?!])', text)))
+        # Break up text based on line enders
+        sentences = re.findall('([^.!?]*)([.?!])', text)
+        # Parse out the text and the enders separately
+        sentences = map(lambda x: (x[0].strip(), x[1]), sentences)
+        # Ignore empty sentences
+        sentences = filter(lambda x: x[0], sentences)
         word_table = defaultdict(Counter)
         for sentence, term in sentences:
+            # Split the sentence into words
             words = map(lambda x: x.lower(), sentence.split())
+            # Break the words into prefix_len-long groups
             for pair in iter_prefix(words, prefix_len):
                 prefix, n = pair
                 word_table[prefix][n] += 1
@@ -57,7 +53,6 @@ class MarkovWords(object):
                             break
                         roll -= cnt
                     break
-            
 
 
 if __name__ == "__main__":
